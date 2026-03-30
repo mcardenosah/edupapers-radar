@@ -79,8 +79,7 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
-    // Añadimos el parámetro { cache: 'no-store' } para obligar al navegador a descargar datos frescos siempre
-    fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_CONTACTO}&t=${Date.now()}`, {
+    fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}&t=${Date.now()}`, {
       cache: 'no-store'
     })
       .then(res => res.json())
