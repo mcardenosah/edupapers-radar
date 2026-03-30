@@ -19,13 +19,13 @@ const REVISTAS_ISSN = [
   "1532-7809", "1362-1688", "1477-0954", "0959-4752", "0034-0553", "1936-2722", 
   "0741-9325", "1538-4756", "0034-6543", "1935-1046", "0091-732X", "1935-1038", 
   "1088-8438", "1532-799X", "0038-0407", "1939-8573", "0742-051X", "0042-0859", 
-  "1552-8340"
+  "1552-8340", "1931-7913"
 ].join("|");
 
 const NOMBRES_REVISTAS = [
   { categoria: "Didáctica de las Ciencias (General)", lista: ["Journal of Research in Science Teaching (JRST)", "Science Education", "Research in Science Education", "Studies in Science Education", "International Journal of Science Education"] },
   { categoria: "Contexto Iberoamericano y Autonómico", lista: ["Enseñanza de las Ciencias", "Ciência & Educação", "Revista Eureka", "REEC", "Didáctica de las Ciencias Experimentales y Sociales", "Alambique", "REIRE", "Ciències"] },
-  { categoria: "Especialidades: BioGeo y Laboratorio", lista: ["The American Biology Teacher", "Journal of Biological Education", "The Science Teacher", "Journal of Geoscience Education", "CourseSource"] },
+  { categoria: "Especialidades: BioGeo y Laboratorio", lista: ["The American Biology Teacher", "Journal of Biological Education", "The Science Teacher", "Journal of Geoscience Education", "CourseSource", "Life Sciences Education"] },
   { categoria: "Investigación Educativa y Psicopedagogía", lista: [
     "American Educational Research Journal", "British Educational Research Journal", 
     "British Journal of Educational Psychology", "British Journal of Educational Technology", 
@@ -79,8 +79,30 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
+    // Añadimos el parámetro { cache: 'no-store' } para obligar al navegador a descargar datos frescos siempre
+    fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_CONTACTO}&t=${Date.now()}`, {
+      cache: 'no-store'
+    })
+      .then(res => res.json())
+      .then(data => {
+        const processed = data.results.map(w => ({
+          id: w.id,
+          title: w.title || "Sin título",
+          journal: w.primary_location?.source?.display_name || "Revista desconocida",
+          date: w.publication_date,
+          authors: w.authorships?.map(a => a.author.display_name).join(", ") || "Varios autores",
+          abstract: reconstruirAbstract(w.abstract_inverted_index),
+          url: w.primary_location?.landing_page_url || w.doi,
+          isOpen: !!w.primary_location?.is_oa
+        }));
+        setArticles(processed);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error("Error al conectar con OpenAlex:", error);
+        setLoading(false);
+      });
+  }, []);
       try {
         const res = await fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}`);
         const data = await res.json();
