@@ -78,7 +78,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState("radar");
   const [showInfo, setShowInfo] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}&t=${Date.now()}`, {
       cache: 'no-store'
     })
@@ -101,26 +101,6 @@ export default function App() {
         console.error("Error al conectar con OpenAlex:", error);
         setLoading(false);
       });
-  }, []);
-      try {
-        const res = await fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}`);
-        const data = await res.json();
-        setArticles(data.results.map(w => ({
-          id: w.id,
-          title: w.title || "Sin título",
-          authors: w.authorships?.map(a => a.author.display_name) || ["Anónimo"],
-          journal: w.primary_location?.source?.display_name || "Revista",
-          date: w.publication_date,
-          isOpenAccess: w.open_access?.is_oa,
-          url: w.primary_location?.landing_page_url || w.doi || "#",
-          abstract: reconstruirAbstract(w.abstract_inverted_index),
-          tags: w.concepts?.slice(0, 3).map(c => c.display_name) || [],
-          dias: calcularDiasTranscurridos(w.publication_date)
-        })));
-      } catch (e) { setError("Error de conexión con la base de datos científica."); }
-      setIsLoading(false);
-    };
-    load();
   }, []);
 
   const filtered = useMemo(() => articles.filter(a => {
