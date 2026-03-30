@@ -79,27 +79,33 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
 
 useEffect(() => {
-    fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}&t=${Date.now()}`, {
+    fetch(`https://api.openalex.org/works?filter=primary_location.source.issn:${REVISTAS_ISSN}&sort=publication_date:desc&per-page=200&mailto=${CORREO_ADMIN}`, {
       cache: 'no-store'
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`OpenAlex bloqueó la petición con error: ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        const processed = data.results.map(w => ({
+        if (!data || !data.results) throw new Error("No se recibieron artículos");
+        
+        setArticles(data.results.map(w => ({
           id: w.id,
           title: w.title || "Sin título",
-          journal: w.primary_location?.source?.display_name || "Revista desconocida",
+          authors: w.authorships?.map(a => a.author.display_name) || ["Anónimo"],
+          journal: w.primary_location?.source?.display_name || "Revista",
           date: w.publication_date,
-          authors: w.authorships?.map(a => a.author.display_name).join(", ") || "Varios autores",
+          isOpenAccess: w.open_access?.is_oa,
+          url: w.primary_location?.landing_page_url || w.doi || "#",
           abstract: reconstruirAbstract(w.abstract_inverted_index),
-          url: w.primary_location?.landing_page_url || w.doi,
-          isOpen: !!w.primary_location?.is_oa
-        }));
-        setArticles(processed);
-        setLoading(false);
+          tags: w.concepts?.slice(0, 3).map(c => c.display_name) || [],
+          dias: calcularDiasTranscurridos(w.publication_date)
+        })));
+        setIsLoading(false);
       })
       .catch(error => {
         console.error("Error al conectar con OpenAlex:", error);
-        setLoading(false);
+        setIsLoading(false);
       });
   }, []);
 
